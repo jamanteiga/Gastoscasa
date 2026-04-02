@@ -1,0 +1,34 @@
+:root { --ingreso: #34c759; --gasto: #ff3b30; --primary: #007aff; --bg: #f2f2f7; }
+body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 0; user-select: none; }
+
+header { padding: calc(50px + env(safe-area-inset-top)) 20px 15px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: var(--bg); z-index: 100; }
+.menu-btn { font-size: 24px; cursor: pointer; }
+.status-dot { width: 12px; height: 12px; border-radius: 50%; background: #ccc; }
+
+.sidebar { position: fixed; left: -280px; top: 0; width: 280px; height: 100%; background: #fff; z-index: 1000; transition: 0.3s; padding-top: 60px; box-shadow: 5px 0 15px rgba(0,0,0,0.1); }
+.sidebar.active { left: 0; }
+.menu-item { padding: 15px 20px; border-bottom: 1px solid #f2f2f7; font-size: 17px; }
+
+.section { display: none; padding: 10px 15px 100px; }
+.section.active { display: block; }
+
+.card { background: #fff; border-radius: 20px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 15px; }
+.balance-card { text-align: center; }
+.balance-total { font-size: 40px; font-weight: 800; margin: 10px 0; }
+.mini-stats { display: flex; justify-content: center; gap: 25px; font-weight: 600; }
+
+input, select { width: 100%; padding: 14px; margin: 8px 0; border: 1px solid #ddd; border-radius: 12px; font-size: 16px; background: #fafafa; -webkit-appearance: none; }
+.btn-save { width: 100%; padding: 16px; border: none; border-radius: 14px; background: var(--primary); color: #fff; font-size: 17px; font-weight: 700; }
+
+.tabs-tipo { display: flex; background: #e3e3e6; border-radius: 12px; padding: 3px; margin-bottom: 15px; }
+.tab-btn { flex: 1; border: none; padding: 10px; border-radius: 10px; font-weight: 600; background: none; }
+.tab-btn.active { background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+
+.history .item { display: flex; justify-content: space-between; padding: 15px; border-bottom: 1px solid #f2f2f7; background: #fff; }
+.text-ingreso { color: var(--ingreso); }
+.text-gasto { color: var(--gasto); }
+
+.chart-container { position: relative; height: 250px; }
+.chart-inner-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -40%); text-align: center; }
+.overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); display: none; z-index: 900; }
+.row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; }

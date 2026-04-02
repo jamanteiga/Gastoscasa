@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Finanzas Pro</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/10149/10149458.png">
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
+    
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">MENÚ</div>
+        <div class="menu-item" onclick="showSection('inicio')">🏠 Inicio</div>
+        <div class="menu-item" onclick="showSection('cuentas')">💳 Añadir Operación</div>
+        <div class="menu-item" onclick="showSection('graficos')">📊 Gráficos</div>
+        <div class="menu-item" onclick="showSection('busqueda')">🔍 Buscar (Lupa)</div>
+        <div class="menu-item" onclick="showSection('resumen')">📋 Resumen Bloques</div>
+        <div class="menu-item" onclick="showSection('ajustes')">⚙️ Ajustes</div>
+        <hr>
+        <div class="menu-item" onclick="exportarExcelPro()">📤 Exportar Excel</div>
+    </nav>
+
+    <header>
+        <div class="menu-btn" onclick="toggleMenu()">☰</div>
+        <h2 id="section-title">INICIO</h2>
+        <div class="status-dot" id="sync-status"></div>
+    </header>
+
+    <main id="inicio" class="section active">
+        <div class="card balance-card">
+            <div class="label">DISPONIBLE TOTAL</div>
+            <div class="balance-total" id="balanceDisplay">0.00€</div>
+            <div class="mini-stats">
+                <span class="text-ingreso">▲ <span id="totalIngresos">0</span>€</span>
+                <span class="text-gasto">▼ <span id="totalGastos">0</span>€</span>
+            </div>
+        </div>
+        <div id="listaRecientes" class="history"></div>
+    </main>
+
+    <section id="cuentas" class="section">
+        <div class="tabs-tipo">
+            <button id="tab-ing" class="tab-btn" onclick="setTipo('ingreso')">INGRESO</button>
+            <button id="tab-gas" class="tab-btn active" onclick="setTipo('gasto')">GASTO</button>
+        </div>
+        <div class="card">
+            <input type="text" id="main-desc" placeholder="Descripción (Ej. Supermercado)">
+            <input type="number" id="main-monto" placeholder="0.00€" inputmode="decimal">
+            <label>Categoría</label>
+            <select id="main-cat" onchange="updateSubs()"></select>
+            <div id="subcat-wrap" style="display:none">
+                <label>Subcategoría / Establecimiento</label>
+                <select id="main-sub"></select>
+            </div>
+            <button class="btn-save" onclick="guardarMovimiento()">Guardar en la Nube</button>
+        </div>
+    </section>
+
+    <section id="graficos" class="section">
+        <div class="card">
+            <div class="chart-container">
+                <canvas id="chartGastos"></canvas>
+                <div class="chart-inner-text">
+                    <div id="chart-total-text">0€</div>
+                    <small>TOTAL GASTO</small>
+                </div>
+            </div>
+        </div>
+        <div id="chart-desglose"></div>
+    </section>
+
+    <section id="busqueda" class="section">
+        <input type="text" class="search-input" placeholder="🔍 Buscar gasto o categoría..." oninput="filtrarLupa(this.value)">
+        <div id="res-busqueda" class="history" style="margin-top:15px;"></div>
+    </section>
+
+    <section id="ajustes" class="section">
+        <div class="card">
+            <h3>Seguridad y Preferencias</h3>
+            <div class="row">
+                <span>PIN Acceso (4 dígitos)</span>
+                <input type="password" id="adj-pin" maxlength="4" style="width:80px" onchange="updateAjuste('pin', this.value)">
+            </div>
+            <div class="row">
+                <span>Vista Compacta</span>
+                <input type="checkbox" id="adj-compacta" onchange="updateAjuste('compacta', this.checked)">
+            </div>
+        </div>
+    </section>
+
+    <script src="app.js"></script>
+</body>
+</html>
