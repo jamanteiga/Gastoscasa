@@ -7,13 +7,11 @@
     
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/10149/10149458.png">
+    <meta name="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/10149/10149458.png">
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     
     <link rel="stylesheet" href="style.css">
 </head>
@@ -26,7 +24,6 @@
         <div class="menu-item" onclick="showSection('cuentas')">💳 Añadir Operación</div>
         <div class="menu-item" onclick="showSection('definiciones')">📝 Mis Plantillas</div>
         <div class="menu-item" onclick="showSection('graficos')">📊 Gráficos</div>
-        <div class="menu-item" onclick="showSection('busqueda')">🔍 Buscar (Lupa)</div>
         <div class="menu-item" onclick="showSection('ajustes')">⚙️ Ajustes</div>
         <hr>
         <div class="menu-item" onclick="exportarExcelPro()">📤 Exportar Excel</div>
@@ -43,13 +40,13 @@
             <div class="label">DISPONIBLE TOTAL</div>
             <div class="balance-total" id="balanceDisplay">0.00€</div>
             
-            <div id="presupuesto-container" style="margin-top: 15px; text-align: left;">
+            <div id="presupuesto-container" style="margin-top: 15px; display: none;">
                 <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 5px;">
                     <span>Presupuesto Mensual</span>
                     <span id="presupuesto-texto">0 / 0€</span>
                 </div>
                 <div style="width: 100%; height: 8px; background: #e3e3e6; border-radius: 4px; overflow: hidden;">
-                    <div id="presupuesto-bar" style="width: 0%; height: 100%; background: var(--ingreso); transition: 0.5s;"></div>
+                    <div id="presupuesto-bar" style="width: 0%; height: 100%; background: #34c759; transition: 0.5s;"></div>
                 </div>
             </div>
 
@@ -67,19 +64,15 @@
             <button id="tab-gas" class="tab-btn active" onclick="setTipo('gasto')">GASTO</button>
         </div>
         <div class="card">
-            <input type="text" id="main-desc" placeholder="Descripción (Ej. Supermercado)">
-            <div style="display: flex; gap: 10px; align-items: center;">
-                <input type="number" id="main-monto" placeholder="0.00€" inputmode="decimal" style="flex: 1;">
-                <button onclick="document.getElementById('ticket-upload').click()" class="btn-scan" style="background: #eee; border: none; border-radius: 12px; padding: 10px; font-size: 20px;">📸</button>
-            </div>
-            <input type="file" id="ticket-upload" accept="image/*" capture="environment" style="display:none" onchange="escanearTicket(this)">
+            <input type="text" id="main-desc" placeholder="Descripción">
+            <input type="number" id="main-monto" placeholder="0.00€" inputmode="decimal">
             <label>Categoría</label>
             <select id="main-cat" onchange="updateSubs()"></select>
             <div id="subcat-wrap">
-                <label>Subcategoría / Establecimiento</label>
+                <label>Subcategoría</label>
                 <select id="main-sub"></select>
             </div>
-            <button class="btn-save" id="btn-save-main" onclick="guardarMovimiento()">Guardar en la Nube</button>
+            <button class="btn-save" onclick="guardarMovimiento()">Guardar en la Nube</button>
         </div>
     </section>
 
@@ -91,7 +84,7 @@
             <select id="def-cat" onchange="updateSubsDef()"></select>
             <label>Subcategoría</label>
             <select id="def-sub"></select>
-            <button class="btn-save" onclick="guardarPlantilla()" style="margin-top:10px; background:#34c759;">+ Crear Plantilla</button>
+            <button class="btn-save" onclick="guardarPlantilla()" style="background:#34c759;">+ Crear Plantilla</button>
         </div>
         <div id="listaPlantillas" class="history"></div>
     </section>
@@ -99,12 +92,12 @@
     <section id="graficos" class="section">
         <div class="card">
             <div style="display: flex; gap: 8px; margin-bottom: 15px;">
-                <button class="tab-btn active" onclick="filtrarGrafico('semana')">Semana</button>
-                <button class="tab-btn" onclick="filtrarGrafico('mes')">Mes</button>
+                <button id="btn-graph-semana" class="tab-btn" onclick="filtrarGrafico('semana')">Semana</button>
+                <button id="btn-graph-mes" class="tab-btn active" onclick="filtrarGrafico('mes')">Mes</button>
             </div>
-            <div class="chart-container" style="position: relative; height: 280px;">
+            <div class="chart-container">
                 <canvas id="chartGastos"></canvas>
-                <div class="chart-inner-text" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -20%); text-align: center;">
+                <div class="chart-inner-text">
                     <div id="chart-total-text" style="font-size: 22px; font-weight: 800;">0€</div>
                 </div>
             </div>
@@ -114,15 +107,11 @@
     <section id="ajustes" class="section">
         <div class="card">
             <h3>Configuración Personal</h3>
-            <div style="margin-bottom: 20px;">
-                <label>Presupuesto Mensual de Gastos (€)</label>
-                <input type="number" id="adj-presupuesto" placeholder="Ej: 1200" onchange="updateAjuste('presupuesto', this.value)">
-            </div>
-            <div style="margin-bottom: 20px;">
-                <label>PIN de Acceso (4 dígitos)</label>
-                <input type="password" id="adj-pin" maxlength="4" placeholder="Sín PIN" onchange="updateAjuste('pin', this.value)">
-            </div>
-            <button class="btn-save" style="background: #8e8e93;" onclick="location.reload()">🔄 Reiniciar App</button>
+            <label>Presupuesto Mensual (€)</label>
+            <input type="number" id="adj-presupuesto" onchange="updateAjuste('presupuesto', this.value)">
+            <label>PIN de Acceso</label>
+            <input type="password" id="adj-pin" maxlength="4" onchange="updateAjuste('pin', this.value)">
+            <button class="btn-save" style="background: #8e8e93; margin-top: 10px;" onclick="location.reload()">🔄 Reiniciar App</button>
         </div>
     </section>
 
