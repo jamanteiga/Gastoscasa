@@ -23,7 +23,6 @@ const categorias = {
     }
 };
 
-// Mejora Visual iPhone: Vibración sutil
 function vibrate() {
     if (window.navigator && window.navigator.vibrate) {
         window.navigator.vibrate(15);
@@ -35,7 +34,6 @@ window.onload = async () => {
         let pass = prompt("PIN DE ACCESO:");
         if (pass !== ajustes.pin) { document.body.innerHTML = "Acceso denegado"; return; }
     }
-    // Cargar valores en Ajustes
     document.getElementById('adj-pin').value = ajustes.pin || '';
     document.getElementById('adj-presupuesto').value = ajustes.presupuesto || 0;
 
@@ -44,6 +42,7 @@ window.onload = async () => {
     await cargarNube();
 };
 
+// --- Lógica de Sincronización ---
 async function cargarNube() {
     try {
         const { data } = await supabaseClient.from('finanzas_db').select('datos').eq('usuario_id', FAMILIA_ID).maybeSingle();
@@ -56,13 +55,14 @@ async function cargarNube() {
 }
 
 async function guardarNube() {
-    vibrate(); // Vibrar al guardar
+    vibrate();
     localStorage.setItem('finanzas_data', JSON.stringify(transacciones));
     localStorage.setItem('finanzas_ajustes', JSON.stringify(ajustes));
     const { error } = await supabaseClient.from('finanzas_db').upsert({ usuario_id: FAMILIA_ID, datos: transacciones });
     document.getElementById('sync-status').style.background = error ? "#ff3b30" : "#34c759";
 }
 
+// --- Interfaz de Usuario ---
 function actualizarUI() {
     const ahora = new Date();
     const mesActual = ahora.getMonth();
@@ -71,7 +71,6 @@ function actualizarUI() {
     const ing = transacciones.filter(t => t.tipo === 'ingreso').reduce((a,b) => a+b.monto, 0);
     const gas = transacciones.filter(t => t.tipo === 'gasto').reduce((a,b) => a+b.monto, 0);
     
-    // Cálculo de gasto mes actual para presupuesto
     const gastoMes = transacciones
         .filter(t => t.tipo === 'gasto' && new Date(t.fecha).getMonth() === mesActual && new Date(t.fecha).getFullYear() === anioActual)
         .reduce((a,b) => a+b.monto, 0);
@@ -80,7 +79,6 @@ function actualizarUI() {
     document.getElementById('totalIngresos').textContent = ing.toFixed(0);
     document.getElementById('totalGastos').textContent = gas.toFixed(0);
 
-    // Lógica Barra Presupuesto
     if(ajustes.presupuesto > 0) {
         const porcentaje = Math.min((gastoMes / ajustes.presupuesto) * 100, 100);
         const bar = document.getElementById('presupuesto-bar');
@@ -95,11 +93,46 @@ function actualizarUI() {
     renderLista(transacciones.slice(-15).reverse(), 'listaRecientes');
 }
 
-// --- RESTO DE FUNCIONES (Siguen igual pero con Haptic) ---
+// --- Manejo de Categorías ---
+function setTipo(t) {
+    currentTipo = t;
+    document.getElementById('tab-ing').classList.toggle('active', t === 'ingreso');
+    document.getElementById('tab-gas').classList.toggle('active', t === 'gasto');
+    document.getElementById('subcat-wrap').style.display = t === 'gasto' ? 'block' : 'none';
+    renderSelects();
+}
 
+function renderSelects() {
+    const catSelect = document.getElementById('main-cat');
+    const defCatSelect = document.getElementById('def-cat');
+    const data = currentTipo === 'ingreso' ? categorias.ingreso : Object.keys(categorias.gasto);
+    
+    const options = data.map(c => `<option value="${c}">${c}</option>`).join('');
+    catSelect.innerHTML = options;
+    defCatSelect.innerHTML = Object.keys(categorias.gasto).map(c => `<option value="${c}">${c}</option>`).join('');
+    
+    updateSubs();
+    updateSubsDef();
+}
+
+function updateSubs() {
+    if (currentTipo === 'ingreso') return;
+    const cat = document.getElementById('main-cat').value;
+    const subs = categorias.gasto[cat] || [];
+    document.getElementById('main-sub').innerHTML = subs.map(s => `<option value="${s}">${s}</option>`).join('');
+}
+
+function updateSubsDef() {
+    const cat = document.getElementById('def-cat').value;
+    const subs = categorias.gasto[cat] || [];
+    document.getElementById('def-sub').innerHTML = subs.map(s => `<option value="${s}">${s}</option>`).join('');
+}
+
+// --- Acciones ---
 async function guardarMovimiento() {
     const monto = parseFloat(document.getElementById('main-monto').value);
     if(!monto) return;
+    
     const item = {
         id: Date.now(),
         tipo: currentTipo,
@@ -108,7 +141,10 @@ async function guardarMovimiento() {
         categoria: currentTipo === 'gasto' ? `${document.getElementById('main-cat').value} (${document.getElementById('main-sub').value})` : document.getElementById('main-cat').value,
         fecha: new Date().toISOString()
     };
+    
     transacciones.push(item);
+    document.getElementById('main-monto').value = '';
+    document.getElementById('main-desc').value = '';
     actualizarUI();
     await guardarNube();
     showSection('inicio');
@@ -122,32 +158,62 @@ async function borrarTransaccion(id) {
     await guardarNube();
 }
 
-function updateAjuste(k, v) {
-    ajustes[k] = k === 'presupuesto' ? parseFloat(v) : v;
-    localStorage.setItem('finanzas_ajustes', JSON.stringify(ajustes));
-    vibrate();
-    actualizarUI();
+// --- Plantillas ---
+function guardarPlantilla() {
+    const nombre = document.getElementById('def-nombre').value;
+    if(!nombre) return;
+    const p = {
+        nombre,
+        cat: document.getElementById('def-cat').value,
+        sub: document.getElementById('def-sub').value
+    };
+    ajustes.plantillas.push(p);
+    guardarNube();
+    renderPlantillas();
+    document.getElementById('def-nombre').value = '';
 }
 
-// --- Gestión Navegación y UI ---
+function usarPlantilla(idx) {
+    const p = ajustes.plantillas[idx];
+    setTipo('gasto');
+    document.getElementById('main-desc').value = p.nombre;
+    document.getElementById('main-cat').value = p.cat;
+    updateSubs();
+    document.getElementById('main-sub').value = p.sub;
+    showSection('cuentas');
+}
+
+function renderPlantillas() {
+    document.getElementById('listaPlantillas').innerHTML = ajustes.plantillas.map((p, i) => `
+        <div class="item" onclick="usarPlantilla(${i})">
+            <div><strong>${p.nombre}</strong><br><small>${p.cat} > ${p.sub}</small></div>
+            <button onclick="event.stopPropagation(); ajustes.plantillas.splice(${i},1); guardarNube(); renderPlantillas();" style="color:red; border:none; background:none;">X</button>
+        </div>
+    `).join('');
+}
+
+// --- Navegación ---
 function showSection(id) {
     vibrate();
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
     document.getElementById('section-title').textContent = id.toUpperCase();
-    if(id === 'graficos') filtrarGrafico('mes');
     if(id === 'definiciones') renderPlantillas();
     if(document.getElementById('sidebar').classList.contains('active')) toggleMenu();
 }
 
 function toggleMenu() {
-    vibrate();
-    const isAct = document.getElementById('sidebar').classList.toggle('active');
-    document.getElementById('overlay').style.display = isAct ? 'block' : 'none';
+    const side = document.getElementById('sidebar');
+    const over = document.getElementById('overlay');
+    side.classList.toggle('active');
+    over.style.display = side.classList.contains('active') ? 'block' : 'none';
 }
 
-// ... Mantener renderSelects, updateSubs, filtrarLupa, exportarExcel del código anterior ...
-// (Asegúrate de incluir las funciones de plantillas que ya hicimos)
+function updateAjuste(k, v) {
+    ajustes[k] = (k === 'presupuesto') ? parseFloat(v) : v;
+    guardarNube();
+    actualizarUI();
+}
 
 function renderLista(lista, containerId) {
     document.getElementById(containerId).innerHTML = lista.map(t => `
@@ -157,7 +223,7 @@ function renderLista(lista, containerId) {
                 <div class="${t.tipo === 'ingreso' ? 'text-ingreso' : 'text-gasto'}" style="font-weight:700">
                     ${t.tipo === 'ingreso' ? '+' : '-'}${t.monto.toFixed(2)}€
                 </div>
-                <button onclick="borrarTransaccion(${t.id})" style="border:none; background:none; color:red; font-size:10px; padding:5px;">BORRAR</button>
+                <button onclick="borrarTransaccion(${t.id})" style="border:none; background:none; color:red; font-size:10px;">BORRAR</button>
             </div>
         </div>
     `).join('');
