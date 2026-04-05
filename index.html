@@ -4,28 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Gastos Casa Pro</title>
-    
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/10149/10149458.png">
-
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-    
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
-    
     <nav class="sidebar" id="sidebar">
-        <div class="sidebar-header">GASTOS CASA</div>
         <div class="menu-item" onclick="showSection('inicio')">🏠 Inicio</div>
         <div class="menu-item" onclick="showSection('cuentas')">💳 Añadir Operación</div>
         <div class="menu-item" onclick="showSection('definiciones')">📝 Mis Plantillas</div>
         <div class="menu-item" onclick="showSection('graficos')">📊 Gráficos</div>
         <div class="menu-item" onclick="showSection('ajustes')">⚙️ Ajustes</div>
-        <hr>
         <div class="menu-item" onclick="exportarExcelPro()">📤 Exportar Excel</div>
     </nav>
 
@@ -36,21 +29,18 @@
     </header>
 
     <main id="inicio" class="section active">
-        <div class="card balance-card">
-            <div class="label">DISPONIBLE TOTAL</div>
+        <div class="card">
+            <div class="label">DISPONIBLE</div>
             <div class="balance-total" id="balanceDisplay">0.00€</div>
-            
-            <div id="presupuesto-container" style="margin-top: 15px; display: none;">
-                <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 5px;">
-                    <span>Presupuesto Mensual</span>
-                    <span id="presupuesto-texto">0 / 0€</span>
+            <div id="presupuesto-container" style="display:none">
+                <div style="display:flex; justify-content:space-between; font-size:12px;">
+                    <span>Presupuesto</span><span id="presupuesto-texto"></span>
                 </div>
-                <div style="width: 100%; height: 8px; background: #e3e3e6; border-radius: 4px; overflow: hidden;">
-                    <div id="presupuesto-bar" style="width: 0%; height: 100%; background: #34c759; transition: 0.5s;"></div>
+                <div style="width:100%; height:8px; background:#eee; border-radius:4px; overflow:hidden; margin-top:5px;">
+                    <div id="presupuesto-bar" style="width:0%; height:100%; background:var(--ingreso);"></div>
                 </div>
             </div>
-
-            <div class="mini-stats" style="margin-top: 20px;">
+            <div style="display:flex; justify-content:center; gap:20px; margin-top:15px;">
                 <span class="text-ingreso">▲ <span id="totalIngresos">0</span>€</span>
                 <span class="text-gasto">▼ <span id="totalGastos">0</span>€</span>
             </div>
@@ -72,46 +62,38 @@
                 <label>Subcategoría</label>
                 <select id="main-sub"></select>
             </div>
-            <button class="btn-save" onclick="guardarMovimiento()">Guardar en la Nube</button>
+            <button class="btn-save" onclick="guardarMovimiento()">Guardar Operación</button>
+        </div>
+    </section>
+
+    <section id="graficos" class="section">
+        <div class="card">
+            <div class="chart-container">
+                <canvas id="chartGastos"></canvas>
+                <div class="chart-inner-text">
+                    <div id="chart-total-text" style="font-size: 24px; font-weight: 800;">0€</div>
+                </div>
+            </div>
         </div>
     </section>
 
     <section id="definiciones" class="section">
         <div class="card">
             <h3>Nueva Plantilla</h3>
-            <input type="text" id="def-nombre" placeholder="Nombre (Ej: Café mañana)">
-            <label>Categoría</label>
+            <input type="text" id="def-nombre" placeholder="Nombre (Ej: Alquiler)">
             <select id="def-cat" onchange="updateSubsDef()"></select>
-            <label>Subcategoría</label>
             <select id="def-sub"></select>
-            <button class="btn-save" onclick="guardarPlantilla()" style="background:#34c759;">+ Crear Plantilla</button>
+            <button class="btn-save" onclick="guardarPlantilla()">+ Crear</button>
         </div>
         <div id="listaPlantillas" class="history"></div>
     </section>
 
-    <section id="graficos" class="section">
-        <div class="card">
-            <div style="display: flex; gap: 8px; margin-bottom: 15px;">
-                <button id="btn-graph-semana" class="tab-btn" onclick="filtrarGrafico('semana')">Semana</button>
-                <button id="btn-graph-mes" class="tab-btn active" onclick="filtrarGrafico('mes')">Mes</button>
-            </div>
-            <div class="chart-container">
-                <canvas id="chartGastos"></canvas>
-                <div class="chart-inner-text">
-                    <div id="chart-total-text" style="font-size: 22px; font-weight: 800;">0€</div>
-                </div>
-            </div>
-        </div>
-    </section>
-
     <section id="ajustes" class="section">
         <div class="card">
-            <h3>Configuración Personal</h3>
             <label>Presupuesto Mensual (€)</label>
             <input type="number" id="adj-presupuesto" onchange="updateAjuste('presupuesto', this.value)">
             <label>PIN de Acceso</label>
             <input type="password" id="adj-pin" maxlength="4" onchange="updateAjuste('pin', this.value)">
-            <button class="btn-save" style="background: #8e8e93; margin-top: 10px;" onclick="location.reload()">🔄 Reiniciar App</button>
         </div>
     </section>
 
