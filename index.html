@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Gastos casa</title>
+    <title>Gastos Casa Pro</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -24,6 +24,7 @@
         <div class="sidebar-header">GASTOS CASA</div>
         <div class="menu-item" onclick="showSection('inicio')">🏠 Inicio</div>
         <div class="menu-item" onclick="showSection('cuentas')">💳 Añadir Operación</div>
+        <div class="menu-item" onclick="showSection('definiciones')">📝 Mis Plantillas</div>
         <div class="menu-item" onclick="showSection('graficos')">📊 Gráficos</div>
         <div class="menu-item" onclick="showSection('busqueda')">🔍 Buscar (Lupa)</div>
         <div class="menu-item" onclick="showSection('ajustes')">⚙️ Ajustes</div>
@@ -41,7 +42,18 @@
         <div class="card balance-card">
             <div class="label">DISPONIBLE TOTAL</div>
             <div class="balance-total" id="balanceDisplay">0.00€</div>
-            <div class="mini-stats">
+            
+            <div id="presupuesto-container" style="margin-top: 15px; text-align: left;">
+                <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 5px;">
+                    <span>Presupuesto Mensual</span>
+                    <span id="presupuesto-texto">0 / 0€</span>
+                </div>
+                <div style="width: 100%; height: 8px; background: #e3e3e6; border-radius: 4px; overflow: hidden;">
+                    <div id="presupuesto-bar" style="width: 0%; height: 100%; background: var(--ingreso); transition: 0.5s;"></div>
+                </div>
+            </div>
+
+            <div class="mini-stats" style="margin-top: 20px;">
                 <span class="text-ingreso">▲ <span id="totalIngresos">0</span>€</span>
                 <span class="text-gasto">▼ <span id="totalGastos">0</span>€</span>
             </div>
@@ -56,51 +68,61 @@
         </div>
         <div class="card">
             <input type="text" id="main-desc" placeholder="Descripción (Ej. Supermercado)">
-            
             <div style="display: flex; gap: 10px; align-items: center;">
                 <input type="number" id="main-monto" placeholder="0.00€" inputmode="decimal" style="flex: 1;">
-                <button onclick="document.getElementById('ticket-upload').click()" class="btn-scan" title="Escanear Ticket" style="background: #eee; border: none; border-radius: 12px; padding: 10px; font-size: 20px; cursor: pointer;">📸</button>
+                <button onclick="document.getElementById('ticket-upload').click()" class="btn-scan" style="background: #eee; border: none; border-radius: 12px; padding: 10px; font-size: 20px;">📸</button>
             </div>
             <input type="file" id="ticket-upload" accept="image/*" capture="environment" style="display:none" onchange="escanearTicket(this)">
-
             <label>Categoría</label>
             <select id="main-cat" onchange="updateSubs()"></select>
-            <div id="subcat-wrap" style="display:none">
+            <div id="subcat-wrap">
                 <label>Subcategoría / Establecimiento</label>
                 <select id="main-sub"></select>
             </div>
-            <button class="btn-save" id="btn-save-main" onclick="guardarMovimiento()" style="width: 100%; padding: 16px; border: none; border-radius: 14px; background: #007aff; color: #fff; font-size: 17px; font-weight: 700; margin-top: 10px;">Guardar en la Nube</button>
+            <button class="btn-save" id="btn-save-main" onclick="guardarMovimiento()">Guardar en la Nube</button>
         </div>
+    </section>
+
+    <section id="definiciones" class="section">
+        <div class="card">
+            <h3>Nueva Plantilla</h3>
+            <input type="text" id="def-nombre" placeholder="Nombre (Ej: Café mañana)">
+            <label>Categoría</label>
+            <select id="def-cat" onchange="updateSubsDef()"></select>
+            <label>Subcategoría</label>
+            <select id="def-sub"></select>
+            <button class="btn-save" onclick="guardarPlantilla()" style="margin-top:10px; background:#34c759;">+ Crear Plantilla</button>
+        </div>
+        <div id="listaPlantillas" class="history"></div>
     </section>
 
     <section id="graficos" class="section">
         <div class="card">
-            <div class="chart-container">
+            <div style="display: flex; gap: 8px; margin-bottom: 15px;">
+                <button class="tab-btn active" onclick="filtrarGrafico('semana')">Semana</button>
+                <button class="tab-btn" onclick="filtrarGrafico('mes')">Mes</button>
+            </div>
+            <div class="chart-container" style="position: relative; height: 280px;">
                 <canvas id="chartGastos"></canvas>
-                <div class="chart-inner-text">
-                    <div id="chart-total-text">0€</div>
-                    <small>TOTAL GASTO</small>
+                <div class="chart-inner-text" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -20%); text-align: center;">
+                    <div id="chart-total-text" style="font-size: 22px; font-weight: 800;">0€</div>
                 </div>
             </div>
         </div>
     </section>
 
-    <section id="busqueda" class="section">
-        <input type="text" class="search-input" placeholder="🔍 Buscar gasto o categoría..." oninput="filtrarLupa(this.value)" style="width: 100%; padding: 14px; border: 1px solid #ddd; border-radius: 12px;">
-        <div id="res-busqueda" class="history" style="margin-top:15px;"></div>
-    </section>
-
     <section id="ajustes" class="section">
         <div class="card">
-            <h3>Seguridad y Preferencias</h3>
-            <div class="row">
-                <span>PIN Acceso (4 dígitos)</span>
-                <input type="password" id="adj-pin" maxlength="4" style="width:80px" onchange="updateAjuste('pin', this.value)">
+            <h3>Configuración Personal</h3>
+            <div style="margin-bottom: 20px;">
+                <label>Presupuesto Mensual de Gastos (€)</label>
+                <input type="number" id="adj-presupuesto" placeholder="Ej: 1200" onchange="updateAjuste('presupuesto', this.value)">
             </div>
-            <div class="row">
-                <span>Vista Compacta</span>
-                <input type="checkbox" id="adj-compacta" onchange="updateAjuste('compacta', this.checked)">
+            <div style="margin-bottom: 20px;">
+                <label>PIN de Acceso (4 dígitos)</label>
+                <input type="password" id="adj-pin" maxlength="4" placeholder="Sín PIN" onchange="updateAjuste('pin', this.value)">
             </div>
+            <button class="btn-save" style="background: #8e8e93;" onclick="location.reload()">🔄 Reiniciar App</button>
         </div>
     </section>
 
