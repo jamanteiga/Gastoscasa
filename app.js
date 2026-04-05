@@ -1,9 +1,9 @@
 'use strict';
 
 const SB_URL = "https://sesnoctvegetxcgjihuh.supabase.co"; 
-const SB_KEY = "09092016jampA!"; // Clave configurada
+const SB_KEY = "09092016jampA!"; 
 const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
-const FAMILIA_ID = "abegondo_pro_2024";
+const FAMILIA_ID = "abegondo_pro_2024"; // ID interno de base de datos (no visible en UI)
 
 let transacciones = JSON.parse(localStorage.getItem('finanzas_data')) || [];
 let ajustes = JSON.parse(localStorage.getItem('finanzas_ajustes')) || { compacta: false, pin: null };
@@ -50,6 +50,34 @@ async function guardarNube() {
     document.getElementById('sync-status').style.background = error ? "#ff3b30" : "#34c759";
 }
 
+async function escanearTicket(input) {
+    if (!input.files || !input.files[0]) return;
+    
+    const btnSave = document.getElementById('btn-save-main');
+    const originalText = btnSave.textContent;
+    btnSave.textContent = "Leyendo ticket... ⏳";
+    btnSave.style.background = "#ff9500";
+
+    try {
+        const { data: { text } } = await Tesseract.recognize(input.files[0], 'eng');
+        const regexMoneda = /(\d+[\.,]\d{2})/g;
+        const coincidencias = text.match(regexMoneda);
+
+        if (coincidencias) {
+            const valores = coincidencias.map(v => parseFloat(v.replace(',', '.')));
+            const maximo = Math.max(...valores);
+            document.getElementById('main-monto').value = maximo.toFixed(2);
+        } else {
+            alert("No se detectó el importe. Intenta con una foto más clara.");
+        }
+    } catch (e) {
+        alert("Error al procesar imagen");
+    } finally {
+        btnSave.textContent = originalText;
+        btnSave.style.background = "#007aff";
+    }
+}
+
 function toggleMenu() {
     const isAct = document.getElementById('sidebar').classList.toggle('active');
     document.getElementById('overlay').style.display = isAct ? 'block' : 'none';
@@ -58,9 +86,9 @@ function toggleMenu() {
 function showSection(id) {
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
-    document.getElementById('section-title').textContent = id.toUpperCase();
+    document.getElementById('section-title').textContent = id === 'inicio' ? 'GASTOS CASA' : id.toUpperCase();
     if(id === 'graficos') initChart();
-    toggleMenu();
+    if(document.getElementById('sidebar').classList.contains('active')) toggleMenu();
 }
 
 function setTipo(t) {
@@ -105,6 +133,7 @@ async function guardarMovimiento() {
     await guardarNube();
     showSection('inicio');
     document.getElementById('main-monto').value = '';
+    document.getElementById('main-desc').value = '';
 }
 
 function actualizarUI() {
@@ -114,7 +143,11 @@ function actualizarUI() {
     document.getElementById('totalIngresos').textContent = ing.toFixed(0);
     document.getElementById('totalGastos').textContent = gas.toFixed(0);
     
-    document.getElementById('listaRecientes').innerHTML = transacciones.slice(-15).reverse().map(t => `
+    renderLista(transacciones.slice(-15).reverse(), 'listaRecientes');
+}
+
+function renderLista(lista, containerId) {
+    document.getElementById(containerId).innerHTML = lista.map(t => `
         <div class="item">
             <div><strong>${t.desc}</strong><br><small>${t.categoria}</small></div>
             <div class="${t.tipo === 'ingreso' ? 'text-ingreso' : 'text-gasto'}" style="font-weight:700">
@@ -122,6 +155,14 @@ function actualizarUI() {
             </div>
         </div>
     `).join('');
+}
+
+function filtrarLupa(val) {
+    const q = val.toLowerCase();
+    const filtrados = transacciones.filter(t => 
+        t.desc.toLowerCase().includes(q) || t.categoria.toLowerCase().includes(q)
+    );
+    renderLista(filtrados.reverse(), 'res-busqueda');
 }
 
 function initChart() {
@@ -150,8 +191,18 @@ function updateAjuste(k, v) {
 }
 
 function exportarExcelPro() {
+    const ahora = new Date();
+    const dia = String(ahora.getDate()).padStart(2, '0');
+    const mes = String(ahora.getMonth() + 1).padStart(2, '0');
+    const anio = ahora.getFullYear();
+    const horas = String(ahora.getHours()).padStart(2, '0');
+    const mins = String(ahora.getMinutes()).padStart(2, '0');
+    const segs = String(ahora.getSeconds()).padStart(2, '0');
+    
+    const nombreFichero = `${dia}/${mes}/${anio}-${horas}:${mins}:${segs}.xlsx`;
+
     const ws = XLSX.utils.json_to_sheet(transacciones);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Finanzas");
-    XLSX.writeFile(wb, "Finanzas_Abegondo.xlsx");
+    XLSX.utils.book_append_sheet(wb, ws, "Gastos");
+    XLSX.writeFile(wb, nombreFichero);
 }

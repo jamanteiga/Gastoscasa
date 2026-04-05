@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Finanzas Pro</title>
+    <title>Gastos casa</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -13,6 +13,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     
     <link rel="stylesheet" href="style.css">
 </head>
@@ -20,12 +21,11 @@
     <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
     
     <nav class="sidebar" id="sidebar">
-        <div class="sidebar-header">MENÚ</div>
+        <div class="sidebar-header">GASTOS CASA</div>
         <div class="menu-item" onclick="showSection('inicio')">🏠 Inicio</div>
         <div class="menu-item" onclick="showSection('cuentas')">💳 Añadir Operación</div>
         <div class="menu-item" onclick="showSection('graficos')">📊 Gráficos</div>
         <div class="menu-item" onclick="showSection('busqueda')">🔍 Buscar (Lupa)</div>
-        <div class="menu-item" onclick="showSection('resumen')">📋 Resumen Bloques</div>
         <div class="menu-item" onclick="showSection('ajustes')">⚙️ Ajustes</div>
         <hr>
         <div class="menu-item" onclick="exportarExcelPro()">📤 Exportar Excel</div>
@@ -56,14 +56,20 @@
         </div>
         <div class="card">
             <input type="text" id="main-desc" placeholder="Descripción (Ej. Supermercado)">
-            <input type="number" id="main-monto" placeholder="0.00€" inputmode="decimal">
+            
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <input type="number" id="main-monto" placeholder="0.00€" inputmode="decimal" style="flex: 1;">
+                <button onclick="document.getElementById('ticket-upload').click()" class="btn-scan" title="Escanear Ticket" style="background: #eee; border: none; border-radius: 12px; padding: 10px; font-size: 20px; cursor: pointer;">📸</button>
+            </div>
+            <input type="file" id="ticket-upload" accept="image/*" capture="environment" style="display:none" onchange="escanearTicket(this)">
+
             <label>Categoría</label>
             <select id="main-cat" onchange="updateSubs()"></select>
             <div id="subcat-wrap" style="display:none">
                 <label>Subcategoría / Establecimiento</label>
                 <select id="main-sub"></select>
             </div>
-            <button class="btn-save" onclick="guardarMovimiento()">Guardar en la Nube</button>
+            <button class="btn-save" id="btn-save-main" onclick="guardarMovimiento()" style="width: 100%; padding: 16px; border: none; border-radius: 14px; background: #007aff; color: #fff; font-size: 17px; font-weight: 700; margin-top: 10px;">Guardar en la Nube</button>
         </div>
     </section>
 
@@ -77,11 +83,10 @@
                 </div>
             </div>
         </div>
-        <div id="chart-desglose"></div>
     </section>
 
     <section id="busqueda" class="section">
-        <input type="text" class="search-input" placeholder="🔍 Buscar gasto o categoría..." oninput="filtrarLupa(this.value)">
+        <input type="text" class="search-input" placeholder="🔍 Buscar gasto o categoría..." oninput="filtrarLupa(this.value)" style="width: 100%; padding: 14px; border: 1px solid #ddd; border-radius: 12px;">
         <div id="res-busqueda" class="history" style="margin-top:15px;"></div>
     </section>
 
